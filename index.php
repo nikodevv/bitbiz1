@@ -689,7 +689,11 @@ $j=$j+4;
 									var numRigs = 15;
 									var inv = <?php echo $roi; ?>;
 									var roi = inv;
-									Highcharts.chart('chartcontainer', {
+									var dividendPayout = [<?php echo $dividenddisp; ?>];
+									var slider = document.getElementById("invSlider");
+
+									
+									var chart = Highcharts.chart('chartcontainer', {
 										chart: {
 											zoomType: 'x'
 										},
@@ -718,7 +722,7 @@ $j=$j+4;
 											{
 												type: 'column',
 												name: 'Dividend Paid to Date',
-												data: [<?php echo $dividenddisp; ?>],
+												data: dividendPayout,
 												pointStart: 1,
 												marker: {
 													radius: 4
@@ -756,7 +760,70 @@ $j=$j+4;
 												enableMouseTracking: false
 											}
 										]
-									});									
+									});	
+									// when the slider changes it triggers an onchange event
+									slider.onchange = function getInvestmentAmt(){
+										/*
+										Instead of redoing all the math done in the PHP formula, much of
+										it can be reused here. The PHP formula finds the returns on a
+										10k investment then scales it by the appropriate amounts.
+										The recalculation on that 10k investment does not need to be repeated,
+										only the scaling, which is done here.
+										*/
+										// resets dividenPayout array from last time slider was changed
+										dividendPayout = [<?php echo $dividenddisp; ?>];
+										// corresponds to $opercentage
+										investFactor = getOpcnt(slider.value)
+										// rescales the dividendPayout array.
+										dividendPayout = dividendPayout.map(x => investFactor*x);
+										/* 
+										The chart could be redrawn now but that wouldn't include 
+										any animation apart from a barely noticable axis # change.
+
+										Axis settings on the chart have to be manipulated to create 
+										an animation, otherwise the picture of the graph stays static
+										and only the axis numbers change (since the dollar value of returns
+										is only scalar multiple of the original 10k investment).
+										*/
+										
+										// update extremes here
+
+										chart.series[0].setData(dividendPayout, true);
+									}
+
+									function getOpcnt(invest){
+										if (invest == 10000){
+											return 1;
+										}
+										else if (invest == 20000){
+											return 2;
+										}
+										else if (invest == 30000){
+											return 3;
+										}
+										else if (invest == 40000){
+											return 4;
+										}
+										else if (invest == 50000){
+											return 5;
+										}
+										else if (invest == 60000){
+											return 6;
+										}
+										else if (invest == 70000){
+											return 7;
+										}
+										else if (invest == 80000){
+											return 8;
+										}
+										else if (invest == 90000){
+											return 9;
+										}
+										else if (invest == 100000){
+											return 10;
+										}
+									}
+									// function to set y axis extemes goes here.								
 								</script>
 							</div> <!-- End Chart-->
                         </div> <!-- /.row -->
