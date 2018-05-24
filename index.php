@@ -684,18 +684,21 @@ $j=$j+4;
 									}
 									// End Slider Script
 								
-								
-									var ethPrice = <?php echo $ethCurPrice; ?>;
-									var numRigs = 15;
-									var inv = <?php echo $roi; ?>;
-									var roi = inv;
 									var dividendPayout = [<?php echo $dividenddisp; ?>];
+									var monthlyDividend = [<?php echo $payoutdisp; ?>];
 									var slider = document.getElementById("invSlider");
-
-									
+									// Creates a series corresponding to straight line of 
+									// investment cost. Has an extra datapoint due to
+									// starting point on xAxis being 0.
+									var defaultROILine = dividendPayout.map(x => 10000);
+									defaultROILine.push(10000);
+									var roiLine = defaultROILine;
 									var chart = Highcharts.chart('chartcontainer', {
 										chart: {
-											zoomType: 'x'
+											zoomType: 'x',
+											animation: {
+												duration: 750
+										    }
 										},
 										xAxis: {
 											min: 1,
@@ -707,7 +710,12 @@ $j=$j+4;
 											min: 1,
 											title: {
 												text: 'Canadian Dollars'
-											}
+											}, 
+											// must divide maximum axis amount
+											tickPixelInterval: 72, 
+											tickInterval: 10000,
+											maxPadding: 0,
+
 										},
 										
 										colors: ['#025142', 'black', 'orange'],
@@ -735,7 +743,7 @@ $j=$j+4;
 											{
 												type: 'line',
 												name: 'Monthly Dividend Amount',
-												data: [<?php echo $payoutdisp; ?>],
+												data: monthlyDividend,
 												pointStart: 1,
 												marker: {
 													radius: 4
@@ -748,7 +756,8 @@ $j=$j+4;
 											{
 												type: 'line',
 												name: 'Return on Investment Mark',
-												data: [[1, roi], [<?php echo $j;?>, roi]],
+												data: roiLine,
+												pointStart: 0,
 												marker: {
 													enabled: false
 												},
@@ -761,8 +770,11 @@ $j=$j+4;
 											}
 										]
 									});	
+
+									//default axis setting (set with function to avoid constant duplication)
+									formatYAxis(1);
 									// when the slider changes it triggers an onchange event
-									slider.onchange = function getInvestmentAmt(){
+									slider.onchange = function recalculateInvestment(){
 										/*
 										Instead of redoing all the math done in the PHP formula, much of
 										it can be reused here. The PHP formula finds the returns on a
@@ -772,10 +784,16 @@ $j=$j+4;
 										*/
 										// resets dividenPayout array from last time slider was changed
 										dividendPayout = [<?php echo $dividenddisp; ?>];
+										// resets monthlyDividend array from last time slider was changed
+										monthlyDividend = [<?php echo $payoutdisp; ?>];
 										// corresponds to $opercentage
 										investFactor = getOpcnt(slider.value)
+
 										// rescales the dividendPayout array.
 										dividendPayout = dividendPayout.map(x => investFactor*x);
+										// rescales monthlyDividend (dividend payments Series data)
+										monthlyDividend = monthlyDividend.map(x => investFactor*x);
+										roiLine = defaultROILine.map(x => 10000*investFactor);
 										/* 
 										The chart could be redrawn now but that wouldn't include 
 										any animation apart from a barely noticable axis # change.
@@ -787,10 +805,13 @@ $j=$j+4;
 										*/
 										
 										// update extremes here
-
+										formatYAxis(investFactor);
+										// redraws charts with updated series from slider input
 										chart.series[0].setData(dividendPayout, true);
+										chart.series[1].setData(monthlyDividend, true);
+										chart.series[2].setData(roiLine, true);
 									}
-
+									
 									function getOpcnt(invest){
 										if (invest == 10000){
 											return 1;
@@ -822,6 +843,23 @@ $j=$j+4;
 										else if (invest == 100000){
 											return 10;
 										}
+									}
+									
+									// sets parameters for Y axis on the basis of a factor
+									function formatYAxis(factor){
+										/* 
+										The Y axis needs to be adjusted or changes from the slider 
+										will not be noticable. The scaling factor will always be [1,10]
+										*/
+										factor = Math.min(10, Math.max(1, factor));
+										var maxAmt = 22500*factor - factor**(1.4)*1000;
+
+										// if (factor==2){
+										// 	maxAmt = 60000
+										// }
+										// if 
+										// chart.yAxis[0].setExtremes(0, 25000*factor + 2500*(10-factor)/10);
+										chart.yAxis[0].setExtremes(0, maxAmt);
 									}
 									// function to set y axis extemes goes here.								
 								</script>
