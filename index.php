@@ -665,34 +665,33 @@ $j=$j+4;
                                     </form>
                                 </div>
 							</div>
-							
+
+							<script src="inc/jquery/jquery-1.11.1.min.js"></script>
 							<div class="col-sm-8"> <!-- Chart -->
 								<script src="./js/chart.js"></script>
 								<div id="chartcontainer" style="min-width: 310px; height: 400px; margin: 0"></div>
 								<script type="text/javascript">
-									// Slider Script
 									var slider = document.getElementById("invSlider");
 									var invAmt = document.getElementById("invAmt");
 									var perc = document.getElementById("perc");
+									var totalReturnText = $("#ROI");
 									invAmt.innerHTML = slider.value; // Display the default slider value
 									perc.innerHTML = slider.value/10000; // Display the default slider value
-
-									// Update the current slider value (each time you drag the slider handle)
-									slider.oninput = function() {
-										invAmt.innerHTML = this.value;
-										perc.innerHTML = this.value/10000;
-									}
-									// End Slider Script
 								
 									var dividendPayout = [<?php echo $dividenddisp; ?>];
 									var monthlyDividend = [<?php echo $payoutdisp; ?>];
 									var slider = document.getElementById("invSlider");
+									// Initial payout on 10k investment is used to set chart parameters.
+									var totalPayout = dividendPayout[dividendPayout.length-1];
 									// Creates a series corresponding to straight line of 
 									// investment cost. Has an extra datapoint due to
 									// starting point on xAxis being 0.
 									var defaultROILine = dividendPayout.map(x => 10000);
 									defaultROILine.push(10000);
 									var roiLine = defaultROILine;
+
+									// Sets text "total return in 18 months.." under slider
+									totalReturnText.text('$' + String(Math.round(totalPayout)));
 									var chart = Highcharts.chart('chartcontainer', {
 										chart: {
 											zoomType: 'x',
@@ -773,6 +772,13 @@ $j=$j+4;
 
 									//default axis setting (set with function to avoid constant duplication)
 									formatYAxis(1);
+
+									// Update the current slider value (each time you drag the slider handle)
+									slider.oninput = function() {
+										invAmt.innerHTML = this.value;
+										perc.innerHTML = this.value/10000;
+									}
+
 									// when the slider changes it triggers an onchange event
 									slider.onchange = function recalculateInvestment(){
 										/*
@@ -810,9 +816,18 @@ $j=$j+4;
 										chart.series[0].setData(dividendPayout, true);
 										chart.series[1].setData(monthlyDividend, true);
 										chart.series[2].setData(roiLine, true);
-									}
 									
+										// Sets text "total return in 18 months.." under slider
+										Math.round(dividendPayout[dividendPayout.length-1])
+										totalReturnText.text('$' + String(Math.round(dividendPayout[dividendPayout.length-1])));
+									}
+
+									/*
+									Corresponds to $opercentage
+									Essentially a scaling factor based on investment size 
+									*/
 									function getOpcnt(invest){
+
 										if (invest == 10000){
 											return 1;
 										}
@@ -852,13 +867,7 @@ $j=$j+4;
 										will not be noticable. The scaling factor will always be [1,10]
 										*/
 										factor = Math.min(10, Math.max(1, factor));
-										var maxAmt = 22500*factor - factor**(1.4)*1000;
-
-										// if (factor==2){
-										// 	maxAmt = 60000
-										// }
-										// if 
-										// chart.yAxis[0].setExtremes(0, 25000*factor + 2500*(10-factor)/10);
+										var maxAmt = (totalPayout+4000)*factor - factor**(1.4)*1000;
 										chart.yAxis[0].setExtremes(0, maxAmt);
 									}
 									// function to set y axis extemes goes here.								
@@ -1216,7 +1225,7 @@ $j=$j+4;
         
         
         <!-- Plugins JS -->
-		<script src="inc/jquery/jquery-1.11.1.min.js"></script>
+        <!-- jquery is loaded before slider starts !-->
 		<script src="inc/bootstrap/js/bootstrap.min.js"></script>
 		<script src="inc/owl-carousel/js/owl.carousel.min.js"></script>
 		<script src="inc/stellar/js/jquery.stellar.min.js"></script>
